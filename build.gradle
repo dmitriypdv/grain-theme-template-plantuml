@@ -47,6 +47,7 @@ dependencies {
     compile "com.sysgears.grain:grain:$project.grainVersion"
 
     compile 'org.codehaus.groovy:groovy:2.1.2'
+    compile 'net.sourceforge.plantuml:plantuml:8033'
 }
 
 sourceSets {

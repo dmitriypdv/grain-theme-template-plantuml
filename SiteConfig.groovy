@@ -1,6 +1,7 @@
 import com.sysgears.theme.ResourceMapper
 import com.sysgears.theme.deploy.GHPagesDeployer
 import com.sysgears.theme.taglib.ThemeTagLib
+import com.sysgears.theme.taglib.DiagramTagLib
 
 // This setting defines the character encoding of html pages,
 // and therefore should match the character encoding of the site files on a filesystem
@@ -8,7 +9,10 @@ html_encoding = 'utf-8' // it is passed to the mata charset attribute of the def
 
 // Resource mapper and tag libs.
 resource_mapper = new ResourceMapper(site).map
-tag_libs = [ThemeTagLib]
+tag_libs = [ThemeTagLib, DiagramTagLib]
+
+plantuml_dir = '/.cache/plantuml'
+source_dir << "${base_dir}${plantuml_dir}"
 
 features {
     highlight = 'pygments' // 'none', 'pygments'

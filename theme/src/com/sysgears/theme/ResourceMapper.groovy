@@ -1,6 +1,7 @@
 package com.sysgears.theme
 
 import com.sysgears.grain.taglib.Site
+import com.sysgears.theme.plantuml.DiagramCache
 
 /**
  * Change pages urls and extend models.
@@ -12,8 +13,14 @@ class ResourceMapper {
      */
     private final Site site
 
+    /**
+     * Diagram cache.
+     */
+    private final DiagramCache diagramCache
+
     public ResourceMapper(Site site) {
         this.site = site
+        diagramCache = new DiagramCache(site)
     }
 
     /**
@@ -21,7 +28,7 @@ class ResourceMapper {
      */
     def map = { resources ->
 
-        def refinedResources = resources.findResults(filterPublished).collect { Map resource ->
+        def refinedResources = generateResources(resources.findResults(filterPublished)).collect { Map resource ->
             fillDates << resource
         }
 
@@ -43,5 +50,33 @@ class ResourceMapper {
         def update = [date: it.date ? Date.parse(site.datetime_format, it.date) : new Date(it.dateCreated as Long),
                 updated: it.updated ? Date.parse(site.datetime_format, it.updated) : new Date(it.lastUpdated as Long)]
         it + update
+    }
+
+    /*
+     * Generates additional resources on the fly.
+     */
+    private def generateResources = { List resources ->
+
+        // generates diagram images
+        resources.findAll { it.diagrams }.each { page -> // looks up only the resources that have the 'diagrams' key specified in the header
+            page.diagrams.each { name, content ->  // iterates the list of diagrams provided in the page header
+                def model = [name: name, content: content]
+                if (!diagramCache.contains(model)) {   // checks if the diagram image is already in the cache
+                    def file = diagramCache.put(model) // generates the new image and puts it to the cache
+                    def location = file.path - diagramCache.cacheDir // finds out the image location
+                    resources << [  // inserts the new image resource to the cache
+                            location: location,
+                            url: location,
+                            markup: 'binary',
+                            type: 'asset',
+                            bytes: file.bytes,
+                            dateCreated: file.dateCreated(),
+                            lastUpdated: file.lastModified()
+                    ]
+                }
+            }
+        }
+
+        resources
     }
 }

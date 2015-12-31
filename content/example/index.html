@@ -1,0 +1,25 @@
+---
+layout: default
+title: Example
+diagrams:
+  diagram1: |
+      Alice -> Bob: Authentication Request
+      Bob --> Alice: Authentication Response
+      Alice -> Bob: Another authentication Request
+      Alice <-- Bob: another authentication Response
+  diagram2: |
+      actor Foo1
+      boundary Foo2
+      control Foo3
+      entity Foo4
+      database Foo5
+      Foo1 -> Foo2 : To boundary
+      Foo1 -> Foo3 : To control
+      Foo1 -> Foo4 : To entity
+      Foo1 -> Foo5 : To database
+published: true
+---
+<img src="${r(getDiagramLocation('diagram1'))}" />
+<hr />
+<img src="${r(getDiagramLocation('diagram2'))}" />
+<hr />
