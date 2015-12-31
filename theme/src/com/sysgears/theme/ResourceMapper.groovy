@@ -59,12 +59,12 @@ class ResourceMapper {
 
         // generates diagram images
         resources.findAll { it.diagrams }.each { page -> // looks up only the resources that have the 'diagrams' key specified in the header
-            page.diagrams.each { name, content ->  // iterates the list of diagrams provided in the page header
+            page.diagrams.each { name, content ->        // iterates the list of diagrams provided in the page header
                 def model = [name: name, content: content]
-                if (!diagramCache.contains(model)) {   // checks if the diagram image is already in the cache
-                    def file = diagramCache.put(model) // generates the new image and puts it to the cache
-                    def location = file.path - diagramCache.cacheDir // finds out the image location
-                    resources << [  // inserts the new image resource to the cache
+                if (!diagramCache.contains(model)) {     // checks if the diagram image is already in the cache
+                    def file = diagramCache.put(model)   // generates the new image and puts it to the cache
+                    def location = file.path - diagramCache.cacheDir   // calculates the image location
+                    resources << [                       // inserts the new image resource to the resource list
                             location: location,
                             url: location,
                             markup: 'binary',
