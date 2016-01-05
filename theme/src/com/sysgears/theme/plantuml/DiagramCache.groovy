@@ -2,13 +2,14 @@ package com.sysgears.theme.plantuml
 
 import com.sysgears.grain.taglib.GrainUtils
 import com.sysgears.grain.taglib.Site
+import groovy.io.FileType
 import net.sourceforge.plantuml.FileFormat
 import net.sourceforge.plantuml.FileFormatOption
 import net.sourceforge.plantuml.SourceStringReader
 
 import java.nio.charset.Charset
 
-class DiagramCache {
+class DiagramCache implements GroovyInterceptable {
 
     /**
      * Site reference, provides access to site configuration.
@@ -20,6 +21,11 @@ class DiagramCache {
      */
     private final String charset = Charset.defaultCharset().displayName()
 
+    /**
+     * Registry of the diagram resources that are currently in use.
+     */
+    private final Set mappedResources = []
+
     public DiagramCache(Site site) {
         this.site = site
     }
@@ -30,9 +36,8 @@ class DiagramCache {
      * @param model diagram model, should contain 'name' and 'content' keys
      * @return the image file
      */
-    def get(Map model) {
-        def location = "${model.name}-${GrainUtils.hash(model.content.bytes)}.png"
-        new File("${cacheDir}/images/${location}")
+    File get(Map model) {
+        new File(getDiagramLocation(model))
     }
 
     /**
@@ -41,8 +46,8 @@ class DiagramCache {
      * @param model diagram model, should contain 'name' and 'content' keys
      * @return the image file
      */
-    def put(Map model) {
-        generate(get(model), model)
+    File put(Map model) {
+        generate(getDiagramLocation(model), model.content)
     }
 
     /**
@@ -51,8 +56,20 @@ class DiagramCache {
      * @param model diagram model, should contain 'name' and 'content' keys
      * @return true if the image is found in the cache, false otherwise
      */
-    def contains(Map model) {
+    boolean contains(Map model) {
         get(model).exists()
+    }
+
+    /**
+     * Drops diagrams that are not longer used.
+     * <br />
+     * All the resources that were not accessed since the last method call are considered as unused.
+     */
+    void dropUnused() {
+        new File("${cacheDir}/images/").eachFileRecurse (FileType.FILES) { file ->
+            if(!mappedResources.contains(file.name)) { file.delete() }
+        }
+        mappedResources.clear()
     }
 
     /**
@@ -60,23 +77,51 @@ class DiagramCache {
      *
      * @return path to the cache directory
      */
-    def getCacheDir() {
+    String getCacheDir() {
         "${site.base_dir}${site.plantuml_dir}"
     }
 
     /**
-     * Generates a new diagram image using the given model.
+     * Builds the diagram name basing on the model.
      *
-     * @param file the image file to write to
-     * @param model diagram model to generate the resource
+     * @param model diagram model, should contain 'name' and 'content' keys
+     * @return the diagram resource name
+     */
+    private String getDiagramName(model) {
+        "${model.name}-${GrainUtils.hash(model.content.bytes)}.png"
+    }
+
+    /**
+     * Returns the diagram location basing on the model.
+     *
+     * @param model diagram model, should contain 'name' and 'content' keys
+     * @return the diagram resource location
+     */
+    private String getDiagramLocation(model) {
+        "${cacheDir}/images/${getDiagramName(model)}"
+    }
+
+    /**
+     * Generates a new diagram image.
+     *
+     * @param location image file location
+     * @param content diagram content to generate the image resource
      * @return the diagram image file
      */
-    private def generate(File file, Map model) {
+    private File generate(String location, String content) {
+        File file = new File(location)
         file.parentFile.mkdirs()
         file.createNewFile()
-        def reader = new SourceStringReader("@startuml\n${model.content}@enduml\n", charset)
+        def reader = new SourceStringReader("@startuml\n${content}@enduml\n", charset)
         reader.generateImage(new FileOutputStream(file), new FileFormatOption(FileFormat.PNG))
 
         return file
+    }
+
+    def invokeMethod(String name, args) {
+        if (name in ['get', 'put', 'contains']) {
+            mappedResources << getDiagramName(args[0]) // adds the resource to the registry
+        }
+        metaClass.getMetaMethod(name, args).invoke(this, args)
     }
 }

@@ -76,6 +76,7 @@ class ResourceMapper {
                 }
             }
         }
+        diagramCache.dropUnused() // removes the diagram resources that are not longer in use
 
         resources
     }
