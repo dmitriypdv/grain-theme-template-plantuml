@@ -66,8 +66,13 @@ class DiagramCache implements GroovyInterceptable {
      * All the resources that were not accessed since the last method call are considered as unused.
      */
     void dropUnused() {
-        new File("${cacheDir}/images/").eachFileRecurse (FileType.FILES) { file ->
-            if(!mappedResources.contains(file.name)) { file.delete() }
+        def imagesDir = new File("${cacheDir}/images/")
+        if (imagesDir.exists()) {
+            imagesDir.eachFileRecurse(FileType.FILES) { file ->
+                if (!mappedResources.contains(file.name)) {
+                    file.delete()
+                }
+            }
         }
         mappedResources.clear()
     }
